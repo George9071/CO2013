@@ -31,3 +31,30 @@ create table provided_product (
         FOREIGN KEY (color) REFERENCES variation_color(color) ON UPDATE CASCADE    
 );
 
+INSERT INTO provided_product 
+    (provider_id, variation_id, color, quantity, discount)
+VALUES
+-- Vogue Fabrics Inc [Áo sơ mi nam (S - Black | M - Light Yellow, Light Blue)] -- 
+    (1, '101M', 'Light Yellow', 100, 10),
+    (1, '101M', 'Light Blue', 80, 10),
+    (1, '101S', 'Black', 120, 15),
+
+-- Runway Supply Co [Kính mát - Black, Gray] --
+    (2, '401D', 'Black', 50, 5),
+    (2, '401D', 'Gray', 40, 5),
+
+-- Elegant Threads Ltd [Áo sơ mi nam (S - White | M - Light Yellow)] --
+    (3, '101S', 'White', 90, 10),
+    (3, '101M', 'Light Yellow', 110, 12),
+
+-- -- Haute Couture Partners [Túi xách tay - Black, Brown] --
+--     (4, '601D', 'Black', 75, 20),
+--     (4, '603D', 'Brown', 60, 25),
+
+-- -- Trendsetters Apparel [Áo thun nam (M - Green | L - Red)] --
+--     (5, '103L', 'Red', 50, 15),
+--     (5, '103M', 'Green', 40, 10),
+
+-- -- Urban Chic Suppliers [Quần thể thao (L - Blue) | Áo khoác thể thao - Gray)] --
+--     (6, '302L', 'Blue', 60, 5),
+--     (6, '304D', 'Gray', 80, 10);
