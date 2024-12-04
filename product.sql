@@ -144,4 +144,64 @@ CALL insert_product_variation(401, 300, 'D');
 CALL insert_product_variation(601, 2400, 'D');
 
 
+CREATE PROCEDURE AddProduct (
+    IN p_catalog_id INT,
+    IN p_name VARCHAR(255),
+    IN p_description VARCHAR(255),
+    IN p_discount_for_employee INT
+)
+BEGIN
+    DECLARE next_product_id INT;
+    
+    -- Determine the next product ID based on the catalog ID
+    IF p_catalog_id BETWEEN 1 AND 7 THEN
+        -- Find the largest product ID in the catalog
+        SELECT MAX(id) + 1 INTO next_product_id
+        FROM product
+        WHERE LEFT(CAST(id AS CHAR), 1) = CAST(p_catalog_id AS CHAR);
+        
+        -- If there are no products in the catalog yet, start from the catalog id * 100
+        IF next_product_id IS NULL THEN
+            SET next_product_id = p_catalog_id * 100 + 1;
+        END IF;
+    ELSE
+        -- If the product belongs to a catalog starting with 8 or 9, find the next available ID
+        SELECT MAX(id) + 1 INTO next_product_id
+        FROM product
+        WHERE LEFT(CAST(id AS CHAR), 1) = CAST(p_catalog_id AS CHAR);
+
+        -- If no products exist yet, start from 801 for catalog 8 and 901 for catalog 9
+        IF next_product_id IS NULL THEN
+            SET next_product_id = p_catalog_id * 100 + 1;
+        END IF;
+    END IF;
+    
+    -- Insert the new product
+    INSERT INTO product (id, name, description, discount_for_employee)
+    VALUES (next_product_id, p_name, p_description, p_discount_for_employee);
+    
+    -- If the product belongs to a catalog, insert into the product_in_catalog table
+    IF p_catalog_id BETWEEN 1 AND 7 THEN
+        INSERT INTO product_in_catalog (catalog_id, product_id)
+        VALUES (p_catalog_id, next_product_id);
+    END IF;
+END;
+
+CREATE PROCEDURE UpdateProduct(
+    IN p_product_id INT,
+    IN p_name VARCHAR(255),
+    IN p_description VARCHAR(255),
+    IN p_discount_for_employee INT
+)
+BEGIN
+    UPDATE product
+    SET name = p_name,
+        description = p_description,
+        discount_for_employee = p_discount_for_employee
+    WHERE id = p_product_id;
+END;
+
+CALL AddProduct(2, 'Áo hai 2 dây nữ', 'Áo Hai Dây Nữ Basic Có Đệm Ngực', 3);
+
+
 

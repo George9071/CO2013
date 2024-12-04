@@ -5,6 +5,10 @@ create table promotion (
     end_date DATE NOT NULL
 );
 
+INSERT INTO promotion (id, content, start_date, end_date)
+VALUES 
+(1, 'Black Friday Discount', '2024-11-28', '2024-12-02');
+
 CREATE TRIGGER ValidatePromotionDates
 BEFORE INSERT ON promotion
 FOR EACH ROW
@@ -15,12 +19,28 @@ BEGIN
     END IF;
 END;
 
+CREATE PROCEDURE AddNewPromotion(
+    IN p_content VARCHAR(255),
+    IN p_start_date DATE,
+    IN p_end_date DATE
+)
+BEGIN
+    DECLARE v_new_id INT;
 
-INSERT INTO promotion (id, content, start_date, end_date)
-VALUES 
-(1, 'Black Friday Discount', '2024-11-28', '2024-12-02');
-(2, 'Tet Holiday', '2024-11-28', '2025-02-01');
+    -- Determine the new ID as max ID + 1
+    SELECT IFNULL(MAX(id), 0) + 1 INTO v_new_id FROM promotion;
 
+    -- Insert the new promotion
+    INSERT INTO promotion (id, content, start_date, end_date)
+    VALUES (v_new_id, p_content, p_start_date, p_end_date);
+END;
+CALL AddNewPromotion(
+    'New Year Ceremony 2025',
+    '2024-12-01',
+    '2025-02-01'
+);
+
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 CREATE TABLE promotion_product (
     product_id INT UNSIGNED,
     promotion_id INT UNSIGNED,
@@ -76,10 +96,10 @@ BEGIN
     WHERE product_id = p_product_id;
 END;
 
--- Adjusts all variations of product ID 101 with a 30% discount.
 -- p_product_id | p_promotion_id | p_discount_rate | p_use_condition
 CALL ApplyPromotion(101, 1, 30, 'Black Friday Deal');
 CALL ApplyPromotion(601, 2, 20, 'Ngày hội mê túi xách');
+CALL ApplyPromotion(103, 2, 40, 'Hội áo thun');
 
 CREATE EVENT ResetExpiredPromotions
 ON SCHEDULE EVERY 1 DAY
@@ -122,3 +142,68 @@ BEGIN
     -- Close the cursor
     CLOSE cur;
 END;
+
+
+CREATE PROCEDURE DisplayPromotedProducts()
+BEGIN
+    SELECT 
+        p.id AS product_id,
+        p.name AS product_name,
+        pp.promotion_id,
+        promo.content AS promotion_name,
+        pp.discount_rate,
+        pp.use_condition,
+        promo.start_date,
+        promo.end_date
+    FROM product p
+    JOIN promotion_product pp ON p.id = pp.product_id
+    JOIN promotion promo ON pp.promotion_id = promo.id
+    WHERE CURDATE() BETWEEN promo.start_date AND promo.end_date
+    ORDER BY promo.start_date, p.name;
+END;
+CALL DisplayPromotedProducts();
+
+CREATE PROCEDURE AdjustDiscountRateForPromotion(
+    IN p_promotion_id INT UNSIGNED,
+    IN p_new_discount_rate INT UNSIGNED
+)
+BEGIN
+    -- Validate the discount rate
+    IF p_new_discount_rate < 0 OR p_new_discount_rate > 100 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Discount rate must be between 0 and 100.';
+    END IF;
+
+    -- Update discount rate for the specified promotion
+    UPDATE promotion_product
+    SET discount_rate = p_new_discount_rate
+    WHERE promotion_id = p_promotion_id;
+
+    -- Adjust sell prices for all products under this promotion
+    UPDATE product_variation pv
+    JOIN promotion_product pp ON pv.product_id = pp.product_id
+    SET pv.sell_price = pv.origin_price - (pv.origin_price * p_new_discount_rate / 100)
+    WHERE pp.promotion_id = p_promotion_id;
+END;
+CALL AdjustDiscountRateForPromotion(2, 30);
+
+
+CREATE PROCEDURE RemovePromotion(
+    IN p_promotion_id INT UNSIGNED
+)
+BEGIN
+    -- Reset sell prices for all variations of products under the promotion
+    UPDATE product_variation pv
+    JOIN promotion_product pp ON pv.product_id = pp.product_id
+    SET pv.sell_price = pv.origin_price
+    WHERE pp.promotion_id = p_promotion_id;
+
+    -- Remove the promotion from the promotion_product table
+    DELETE FROM promotion_product
+    WHERE promotion_id = p_promotion_id;
+
+    -- Remove the promotion itself
+    DELETE FROM promotion
+    WHERE id = p_promotion_id;
+END;
+CALL RemovePromotion(2);
