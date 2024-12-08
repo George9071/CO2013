@@ -52,3 +52,5 @@ VALUES
 (10006, 'Cửa hàng 6', 'Hồ Chí Minh', 'Phạm Ngũ Lão', 'PNLstore@gmail.com', '0926186464'),
 (10007, 'Cửa hàng 7', 'Đà Lạt', 'Nguyễn Đình Chiểu', 'NDCstore@gmail.com', '0935741821'),
 (10008, 'Cửa hàng 8', 'Cần Thơ', 'Hoàng Diệu', 'HoangDieustore@gmail.com', '0926715785');
+
+select * from store;

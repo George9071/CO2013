@@ -122,8 +122,8 @@ where id=20001
 INSERT INTO employee 
 (id, firstname, lastname, gender, phone_number, city, street, shift, start_date, office, store_id, supervisor)
 VALUES 
-Store 1: Hồ Chí Minh (Cửa hàng 1)
-ca sáng
+-- Store 1: Hồ Chí Minh (Cửa hàng 1)
+-- ca sáng
 (10001, 'Nhi'   , 'Lê Thị Ý'    , 'nữ' , '0912726581', 'Hồ Chí Minh', 'Võ Văn Việt'     , 'sáng'    , '2020-02-15', 'manager', 10001, null),
 (10002, 'Toàn'  , 'Nguyễn Văn'  , 'nam', '0912742781', 'Hồ Chí Minh', 'Lý Thường Kiệt'  , 'sáng'    , '2023-11-11', 'normal' , 10001, 10001),
 

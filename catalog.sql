@@ -85,4 +85,4 @@ BEGIN
     RETURN product_count;
 END;
 
-SELECT CountProductsInCatalog(8);
+SELECT CountProductsInCatalog(1);

@@ -212,7 +212,7 @@ BEGIN
         AND MONTH(o.order_date) = specified_month
         AND YEAR(o.order_date) = specified_year
     GROUP BY 
-        od.variation_id, od.color
+        MONTH(o.order_date), YEAR(o.order_date), od.variation_id, od.color
     ORDER BY 
         od.variation_id, od.color;
 END;
@@ -246,9 +246,11 @@ BEGIN
         AND MONTH(o.order_date) = specified_month
         AND YEAR(o.order_date) = specified_year
     GROUP BY 
-        e.shift
+        MONTH(o.order_date), YEAR(o.order_date), e.shift
     ORDER BY 
-        FIELD(e.shift, 'sáng', 'chiều', 'tối'); -- Ensure proper shift ordering
+        FIELD(e.shift, 'sáng', 'chiều', 'tối'); 
 END;
 
 CALL OrdersByShift(12, 2024, 10001);
+
+DESCRIBE booking;

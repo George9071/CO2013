@@ -19,10 +19,16 @@ BEGIN
     END IF;
 END;
 
+INSERT INTO promotion (content, start_date, end_date)
+VALUES ('Promo Test', '2024-12-10', '2024-12-01');
+
+drop procedure AddNewPromotion;
+
 CREATE PROCEDURE AddNewPromotion(
     IN p_content VARCHAR(255),
     IN p_start_date DATE,
-    IN p_end_date DATE
+    IN p_end_date DATE,
+    OUT new_promotion_id INT
 )
 BEGIN
     DECLARE v_new_id INT;
@@ -33,7 +39,28 @@ BEGIN
     -- Insert the new promotion
     INSERT INTO promotion (id, content, start_date, end_date)
     VALUES (v_new_id, p_content, p_start_date, p_end_date);
+
+    -- Set the output parameter with the new promotion ID
+    SET new_promotion_id = v_new_id;
 END;
+
+CALL AddNewPromotion('Lunar New Year 2025', '2024-12-08', '2025-03-01', @new_id);
+-- Retrieve the new promotion ID
+SELECT @new_id;
+
+
+CALL AddNewPromotion(
+    'New Year Ceremony 2025',
+    '2024-12-01',
+    '2025-02-01'
+);
+
+CALL AddNewPromotion(
+    'New Year Ceremony 2025',
+    '2024-12-01',
+    '2025-02-01'
+);
+
 CALL AddNewPromotion(
     'New Year Ceremony 2025',
     '2024-12-01',

@@ -27,10 +27,7 @@ create table detail_report(
     report_id varchar(255),
     variation_id varchar(255),
     color varchar(255),
-    primary key (report_id, variation_id, variation_color),
-    CONSTRAINT FK_dtrp_report
-        FOREIGN KEY (report_id) REFERENCES report(id)
-        ON DELETE CASCADE,
+    primary key (report_id, variation_id, color),
     CONSTRAINT FK_dtrp_report
         FOREIGN KEY (report_id) REFERENCES report(id)
         ON DELETE CASCADE,
