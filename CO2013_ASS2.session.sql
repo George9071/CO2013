@@ -109,3 +109,5 @@
 
 
 
+delete from variation_in_store
+where variation_id = '401D' and store_id = 10002;

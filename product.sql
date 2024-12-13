@@ -105,10 +105,12 @@ BEGIN
     END IF;
 END;
 
+
 CREATE PROCEDURE insertProductVariation(
     IN p_product_id INT UNSIGNED,
     IN p_origin_price INT UNSIGNED,
-    IN p_size ENUM('S', 'M', 'L', 'D') 
+    IN p_size ENUM('S', 'M', 'L', 'D'),
+    OUT new_variation_id VARCHAR(255) -- Added output parameter
 )
 BEGIN
     DECLARE variation_id VARCHAR(255);
@@ -134,6 +136,9 @@ BEGIN
     ) VALUES (
         variation_id, p_product_id, p_size, p_origin_price, p_origin_price
     );
+
+    -- Set the output parameter
+    SET new_variation_id = variation_id;
 END;
 
 CALL insert_product_variation(101, 500, 'S');
@@ -143,23 +148,23 @@ CALL insert_product_variation(103, 1200, 'L');
 CALL insert_product_variation(401, 300, 'D');
 CALL insert_product_variation(601, 2400, 'D');
 
-
 CREATE PROCEDURE AddProduct (
     IN p_catalog_id INT,
     IN p_name VARCHAR(255),
     IN p_description VARCHAR(255),
-    IN p_discount_for_employee INT
+    IN p_discount_for_employee INT,
+    OUT new_product_id INT -- Added output parameter
 )
 BEGIN
     DECLARE next_product_id INT;
-    
+
     -- Determine the next product ID based on the catalog ID
     IF p_catalog_id BETWEEN 1 AND 7 THEN
         -- Find the largest product ID in the catalog
         SELECT MAX(id) + 1 INTO next_product_id
         FROM product
         WHERE LEFT(CAST(id AS CHAR), 1) = CAST(p_catalog_id AS CHAR);
-        
+
         -- If there are no products in the catalog yet, start from the catalog id * 100
         IF next_product_id IS NULL THEN
             SET next_product_id = p_catalog_id * 100 + 1;
@@ -175,16 +180,19 @@ BEGIN
             SET next_product_id = p_catalog_id * 100 + 1;
         END IF;
     END IF;
-    
+
     -- Insert the new product
     INSERT INTO product (id, name, description, discount_for_employee)
     VALUES (next_product_id, p_name, p_description, p_discount_for_employee);
-    
+
     -- If the product belongs to a catalog, insert into the product_in_catalog table
     IF p_catalog_id BETWEEN 1 AND 7 THEN
         INSERT INTO product_in_catalog (catalog_id, product_id)
         VALUES (p_catalog_id, next_product_id);
     END IF;
+
+    -- Set the output parameter
+    SET new_product_id = next_product_id;
 END;
 
 CREATE PROCEDURE UpdateProduct(
