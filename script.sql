@@ -827,6 +827,16 @@ CREATE PROCEDURE AdjustDiscountRateForPromotion(
     IN p_new_discount_rate INT UNSIGNED
 )
 BEGIN
+    -- Declare a handler to catch any SQL exceptions
+    DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
+    BEGIN
+        -- If an error occurs, rollback the transaction
+        ROLLBACK;
+        -- Optionally, raise a custom error message
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Có lỗi xảy ra khi điều chỉnh mức khuyến mãi';
+    END;
+
     -- Validate the discount rate
     IF p_new_discount_rate < 0 OR p_new_discount_rate > 100 THEN
         SIGNAL SQLSTATE '45000'
@@ -836,30 +846,21 @@ BEGIN
     -- Start the transaction
     START TRANSACTION;
 
-    BEGIN
-        -- Update the discount rate for the specified product under the given promotion
-        UPDATE promotion_product
-        SET discount_rate = p_new_discount_rate
-        WHERE promotion_id = p_promotion_id
-        AND product_id = p_product_id;
+    -- Update the discount rate for the specified product under the given promotion
+    UPDATE promotion_product
+    SET discount_rate = p_new_discount_rate
+    WHERE promotion_id = p_promotion_id
+    AND product_id = p_product_id;
 
-        -- Adjust the sell price for the specified product under this promotion
-        UPDATE product_variation pv
-        JOIN promotion_product pp ON pv.product_id = pp.product_id
-        SET pv.sell_price = pv.origin_price - (pv.origin_price * p_new_discount_rate / 100)
-        WHERE pp.promotion_id = p_promotion_id
-        AND pp.product_id = p_product_id;
+    -- Adjust the sell price for the specified product under this promotion
+    UPDATE product_variation pv
+    JOIN promotion_product pp ON pv.product_id = pp.product_id
+    SET pv.sell_price = pv.origin_price - (pv.origin_price * p_new_discount_rate / 100)
+    WHERE pp.promotion_id = p_promotion_id
+    AND pp.product_id = p_product_id;
 
-        -- If everything goes well, commit the transaction
-        COMMIT;
-    EXCEPTION
-        WHEN OTHERS THEN
-            -- If there's an error, rollback the transaction
-            ROLLBACK;
-            -- Optionally, raise an error message
-            SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Có lỗi xảy ra khi điều chỉ mức khuyến mãi';
-    END;
+    -- If everything goes well, commit the transaction
+    COMMIT;
 END
 $$
 DELIMITER ;
@@ -870,34 +871,35 @@ CREATE PROCEDURE RemovePromotion(
     IN p_promotion_id INT UNSIGNED
 )
 BEGIN
+    -- Declare a handler to catch any SQL exceptions
+    DECLARE CONTINUE HANDLER FOR SQLEXCEPTION
+    BEGIN
+        -- If an error occurs, rollback the transaction
+        ROLLBACK;
+        -- Optionally, raise a custom error message
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Có lỗi xảy ra khi xóa mã khuyến mãi';
+    END;
+
     -- Start the transaction
     START TRANSACTION;
 
-    BEGIN
-        -- Reset sell prices for all variations of products under the promotion
-        UPDATE product_variation pv
-        JOIN promotion_product pp ON pv.product_id = pp.product_id
-        SET pv.sell_price = pv.origin_price
-        WHERE pp.promotion_id = p_promotion_id;
+    -- Reset sell prices for all variations of products under the promotion
+    UPDATE product_variation pv
+    JOIN promotion_product pp ON pv.product_id = pp.product_id
+    SET pv.sell_price = pv.origin_price
+    WHERE pp.promotion_id = p_promotion_id;
 
-        -- Remove the promotion from the promotion_product table
-        DELETE FROM promotion_product
-        WHERE promotion_id = p_promotion_id;
+    -- Remove the promotion from the promotion_product table
+    DELETE FROM promotion_product
+    WHERE promotion_id = p_promotion_id;
 
-        -- Remove the promotion itself
-        DELETE FROM promotion
-        WHERE id = p_promotion_id;
+    -- Remove the promotion itself
+    DELETE FROM promotion
+    WHERE id = p_promotion_id;
 
-        -- If everything goes well, commit the transaction
-        COMMIT;
-    EXCEPTION
-        WHEN OTHERS THEN
-            -- If there's an error, rollback the transaction
-            ROLLBACK;
-            -- Optionally, raise an error message
-            SIGNAL SQLSTATE '45000'
-            SET MESSAGE_TEXT = 'Có lỗi xảy ra khi xóa mã khuyến mãi';
-    END;
+    -- If everything goes well, commit the transaction
+    COMMIT;
 END
 $$
 DELIMITER ;
@@ -1042,14 +1044,12 @@ BEGIN
     -- Start transaction
     START TRANSACTION;
 
-    -- Lock the report table to prevent concurrent reads/writes
-    LOCK TABLES report WRITE;
-
-    -- Get the max suffix for reports with the same prefix
+    -- Select and lock the relevant rows for update
     SELECT IFNULL(MAX(CAST(SUBSTRING(id, LENGTH(prefix) + 1) AS UNSIGNED)), 0)
     INTO suffix
     FROM report
-    WHERE id LIKE CONCAT(prefix, '%');
+    WHERE id COLLATE utf8mb4_unicode_ci LIKE CONCAT(prefix, '%') COLLATE utf8mb4_unicode_ci
+    FOR UPDATE;
 
     -- Increment the suffix
     SET suffix = suffix + 1;
@@ -1057,8 +1057,7 @@ BEGIN
     -- Generate the report ID
     SET generated_id = CONCAT(prefix, suffix);
 
-    -- Unlock tables and commit transaction
-    UNLOCK TABLES;
+    -- Commit transaction
     COMMIT;
 END
 $$
@@ -1360,12 +1359,11 @@ CALL InsertReportWithGeneratedID(2, 'Import Report 3', 5, 12, 2024, 'import');
 
 INSERT INTO detail_report (report_id, variation_id, color, quantity)
 VALUES
-('RP10001IP1', '101M', 'Light Yellow', 100),
-('RP10001IP1', '101M', 'Light Blue', 150),
-('RP10002EP1', '101S', 'Black', 200),
-('RP10003IP1', '101S', 'White', 180),
-('RP10001EP2', '401D', 'Black', 120),
-('RP10002IP2', '401D', 'Gray', 130);
+('RP1EP1', '101M', 'Light Yellow', 100),
+('RP1IP1', '101M', 'Light Blue', 150),
+('RP2EP1', '101S', 'Black', 200),
+('RP2IP1', '101S', 'White', 180),
+('RP3IP1', '401D', 'Black', 120);
 
 --------------------------------------------------------------------------------------------------------------------------------------------------------
 ALTER TABLE store
@@ -1401,11 +1399,11 @@ ADD CONSTRAINT FK_color_variation
 FOREIGN KEY (variation_id) REFERENCES product_variation(id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 ALTER TABLE variation_in_store
-ADD CONSTRAINT FK_color_in_store_store 
+ADD CONSTRAINT FK_variation_in_store_store 
 FOREIGN KEY (store_id) REFERENCES store(id) ON UPDATE CASCADE ON DELETE CASCADE,
 ADD CONSTRAINT FK_color_in_store_color 
 FOREIGN KEY (color) REFERENCES variation_color(color) ON UPDATE CASCADE ON DELETE CASCADE,
-ADD CONSTRAINT FK_color_in_store_variation 
+ADD CONSTRAINT FK_vc_in_store_variation 
 FOREIGN KEY (variation_id) REFERENCES variation_color(variation_id) ON UPDATE CASCADE ON DELETE CASCADE;
 
 ALTER TABLE membership
