@@ -35,10 +35,10 @@ CREATE TABLE catalog_in_store (
     catalog_id  INT UNSIGNED,
 	store_id    INT UNSIGNED,
 	PRIMARY KEY(catalog_id, store_id)
-)
+);
 
 CREATE TABLE product (
-	id                    INT UNSIGNED      PRIMARY KEY
+	id                    INT UNSIGNED      PRIMARY KEY,
 	name                  VARCHAR(255)      NOT NULL,
 	description           VARCHAR(255),
 	discount_for_employee INT UNSIGNED      default 0
@@ -197,11 +197,10 @@ CREATE TABLE detail_report(
     report_id       VARCHAR(255),
     variation_id    VARCHAR(255),
     color           VARCHAR(255),
-    quantity        INT UNSIGNED DEFAULT 0
+    quantity        INT UNSIGNED DEFAULT 0,
     primary key (report_id, variation_id, color)
 );
-
---------------------------------------------------------------------------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------------------------------------------------------------------------
 DELIMITER $$
 CREATE TRIGGER validate_store_email
 BEFORE INSERT ON store
@@ -484,7 +483,7 @@ DELIMITER ;
 DELIMITER $$
 $$
 DELIMITER ;
---------------------------------------------------------------------------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------------------------------------------------------------------------
 DELIMITER $$
 CREATE PROCEDURE AddProduct (
     IN p_catalog_id INT,
@@ -542,7 +541,7 @@ BEGIN
 END
 $$
 DELIMITER ;
-CALL AddProduct(2, 'Áo hai 2 dây nữ', 'Áo Hai Dây Nữ Basic Có Đệm Ngực', 3);
+-- CALL AddProduct(2, 'Áo hai 2 dây nữ', 'Áo Hai Dây Nữ Basic Có Đệm Ngực', 3);
 
 DELIMITER $$
 CREATE PROCEDURE InsertProductVariation(
@@ -649,7 +648,7 @@ BEGIN
 END
 $$
 DELIMITER ;
-SELECT CountProductsInCatalog(1);
+-- SELECT CountProductsInCatalog(1);
 
 DELIMITER $$
 CREATE PROCEDURE ExchangeVoucher(
@@ -818,7 +817,7 @@ BEGIN
 END
 $$
 DELIMITER ;
-CALL DisplayPromotedProducts();
+-- CALL DisplayPromotedProducts();
 
 DELIMITER $$
 CREATE PROCEDURE AdjustDiscountRateForPromotion(
@@ -864,7 +863,7 @@ BEGIN
 END
 $$
 DELIMITER ;
-CALL AdjustDiscountRateForPromotion(3, 104, 30); -- product 104 will have its discount rate changed to 30%
+-- CALL AdjustDiscountRateForPromotion(3, 104, 30); -- product 104 will have its discount rate changed to 30%
 
 DELIMITER $$
 CREATE PROCEDURE RemovePromotion(
@@ -940,7 +939,7 @@ BEGIN
 END
 $$
 DELIMITER ;
-CALL DetailSoldProduct (12, 2024, 10001);
+-- CALL DetailSoldProduct (12, 2024, 10001);
 
 DELIMITER $$
 CREATE PROCEDURE OrdersByShift(
@@ -1099,7 +1098,7 @@ DELIMITER ;
 DELIMITER $$
 $$
 DELIMITER ;
---------------------------------------------------------------------------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------------------------------------------------------------------------
 
 INSERT INTO store (id, name, city, street, email, phone_number)
 VALUES 
@@ -1186,19 +1185,20 @@ VALUES
 (4, 401), (4, 402), (4, 403), (4, 404), (4, 405),
 (6, 601), (6, 602), (6, 603), (6, 604), (6, 605);
 
-CALL InsertProductVariation(101, 500, 'S');
-CALL InsertProductVariation(101, 700, 'M');
-CALL InsertProductVariation(103, 1000, 'M');
-CALL InsertProductVariation(103, 1200, 'L');
-CALL InsertProductVariation(401, 300, 'D');
-CALL InsertProductVariation(601, 2400, 'D');
+set @new_variation_id = '0';
+CALL InsertProductVariation(101, 500, 'S', @new_variation_id);
+CALL InsertProductVariation(101, 700, 'M', @new_variation_id);
+CALL InsertProductVariation(103, 1000, 'M', @new_variation_id);
+CALL InsertProductVariation(103, 1200, 'L', @new_variation_id);
+CALL InsertProductVariation(401, 300, 'D', @new_variation_id);
+CALL InsertProductVariation(601, 2400, 'D', @new_variation_id);
 
 INSERT INTO variation_color (color, variation_id) 
 VALUES
 ('Light Yellow', '101M'), 
 ('Light Blue', '101M'), 
 ('Black', '101S'), 
-('White', '101S');
+('White', '101S'),
 ('Black', '401D'), 
 ('Gray', '401D');
 
@@ -1250,12 +1250,12 @@ VALUES
 (4, 4), -- Phạm Thị Dung exchanged voucher 4
 (5, 5); -- Vũ Minh Thư exchanged voucher 5
 
-
-CALL AddNewPromotion('Black Friday', '2024-12-01', '2024-12-15');
-CALL AddNewPromotion('Khuyến mãi 12/12', '2024-12-10', '2024-12-20');
-CALL AddNewPromotion('Kỉ niệm 5 năm thành lập chuỗi cửa hàng', '2024-12-05', '2024-12-25');
-CALL AddNewPromotion('Tết linh đình, mua sắm tưng bừng', '2024-12-01', '2024-12-31');
-CALL AddNewPromotion('Flash Sale mùa tựu trường', '2024-09-12', '2024-11-13');
+set @new_variation_id = 0;
+CALL AddNewPromotion('Black Friday', '2024-12-01', '2024-12-15', @new_variation_id);
+CALL AddNewPromotion('Khuyến mãi 12/12', '2024-12-10', '2024-12-20', @new_variation_id);
+CALL AddNewPromotion('Kỉ niệm 5 năm thành lập chuỗi cửa hàng', '2024-12-05', '2024-12-25', @new_variation_id);
+CALL AddNewPromotion('Tết linh đình, mua sắm tưng bừng', '2024-12-01', '2024-12-31', @new_variation_id);
+CALL AddNewPromotion('Flash Sale mùa tựu trường', '2024-09-12', '2024-11-13', @new_variation_id);
 
 -- Apply Promotion 1 to Product 101
 CALL ApplyPromotion(101, 1, 20, 'Áp dụng cho toàn bộ kích cỡ');
@@ -1282,7 +1282,7 @@ VALUES
 
 ('2024-12-04', 80, 800.00, 10001, 10003, NULL, NULL, 'receipt'),    -- Receipt order for store 10001
 ('2024-12-05', 90, 900.00, 10002, 20004, NULL, NULL, 'receipt'),    -- Receipt order for store 10002
-('2024-12-06', 100, 1000.00, 10001, 10006, NULL, NULL, 'receipt');  -- Receipt order for store 10001
+('2024-12-06', 100, 1000.00, 10001, 10006, NULL, NULL, 'receipt'),  -- Receipt order for store 10001
 ('2024-12-07', 200, 2000.00, 10001, 10005, NULL, NULL, 'receipt');  -- Receipt order for store 10001
 
 INSERT INTO order_detail (order_id, variation_id, color, quantity)
@@ -1307,14 +1307,14 @@ INSERT INTO booking (order_id, pickup_date, state, paid)
 VALUES
 (1, '2024-12-10', 'Processing'  , 'Not paid'),         -- Booking 1
 (2, '2024-12-11', 'Ready'       , 'Paid'),             -- Booking 2
-(3, '2024-12-12', 'Picked-up'   , 'Paid');             -- Booking 3
+(3, '2024-12-12', 'Picked-up'   , 'Paid'),             -- Booking 3
 (4, '2024-12-09', 'Ready'       , 'Not paid');         -- Booking 4
 
 INSERT INTO receipt (order_id, order_time)
 VALUES
 (5, '2024-12-04 10:10:00'), -- Receipt 1
 (6, '2024-12-05 11:11:00'), -- Receipt 2
-(7, '2024-12-06 12:12:00'); -- Receipt 3
+(7, '2024-12-06 12:12:00'), -- Receipt 3
 (8, '2024-12-07 13:31:00'); -- Receipt 4
 
 INSERT INTO revenue (month, year, last_update, note, title, number_of_orders, store_id) VALUES
@@ -1365,7 +1365,7 @@ VALUES
 ('RP2IP1', '101S', 'White', 180),
 ('RP3IP1', '401D', 'Black', 120);
 
---------------------------------------------------------------------------------------------------------------------------------------------------------
+-- --------------------------------------------------------------------------------------------------------------------------------------------------------
 ALTER TABLE store
 ADD CONSTRAINT FK_store_employee
 FOREIGN KEY (manager_id) REFERENCES employee(id);
@@ -1476,6 +1476,6 @@ ALTER TABLE detail_report
 ADD CONSTRAINT FK_dtrp_report
 FOREIGN KEY (report_id) REFERENCES report(id) ON DELETE CASCADE,
 ADD CONSTRAINT FK_dtrp_variation
-FOREIGN KEY (variation_id) REFERENCES variation_color(id) ON DELETE CASCADE,
+FOREIGN KEY (variation_id) REFERENCES variation_color(variation_id) ON DELETE CASCADE,
 ADD CONSTRAINT FK_dtrp_color 
 FOREIGN KEY (color) REFERENCES variation_color(color) ON DELETE CASCADE;
